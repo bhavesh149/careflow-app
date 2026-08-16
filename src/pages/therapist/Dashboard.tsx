@@ -7,6 +7,7 @@ import type { Appointment } from '../../api/types'
 import { useSession } from '../../auth/session'
 import { Avatar } from '../../components/Avatar'
 import { Icon } from '../../components/Icon'
+import { useConfirmDialog } from '../../components/ConfirmDialog'
 import { useQueryErrorToast, useToast } from '../../components/Toast'
 import { errorMessage } from '../../lib/errors'
 import { clearIntent, intentKey } from '../../lib/idempotency'
@@ -23,6 +24,7 @@ export function DashboardPage() {
   const { user } = useSession()
   const toast = useToast()
   const queryClient = useQueryClient()
+  const { ask, dialog } = useConfirmDialog()
   const [day, setDay] = useState(kolkataDate())
   const [q, setQ] = useState('')
 
@@ -89,7 +91,7 @@ export function DashboardPage() {
           <h1>Welcome back, Dr. {firstName}</h1>
           <p className="muted">Here is your schedule for {formatLongDate(`${day}T12:00:00+05:30`)}.</p>
         </div>
-        <div className="topbar-user">
+        <div className="topbar-user page-header-user">
           <div className="text-right">
             <strong>{user?.fullName}</strong>
             <p className="muted">Therapist</p>
@@ -161,72 +163,39 @@ export function DashboardPage() {
         ) : null}
 
         {dayRows.length > 0 ? (
-          <>
-            <div className="table-wrap agenda-desktop">
-            <table className="agenda">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Patient</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dayRows.map((appt) => (
-                  <AgendaRow
-                    key={appt.id}
-                    appt={appt}
-                    busy={mark.isPending || cancel.isPending}
-                    onStatus={(status) => mark.mutate({ id: appt.id, status })}
-                    onCancel={() => cancel.mutate(appt.id)}
-                  />
-                ))}
-              </tbody>
-            </table>
-            </div>
-            <ol className="timeline agenda-mobile">
-              {dayRows.map((appt) => (
-                <li key={appt.id} className={appt.status === 'SCHEDULED' ? 'timeline-item current' : 'timeline-item'}>
-                  <div className="timeline-time">{formatTime(appt.startTime)}</div>
-                  <article className="timeline-card">
-                    <div className="row">
-                      <Avatar name={appt.patientName} size="sm" src={patientShowcase(appt.patientName).photoUrl} />
-                      <div>
-                        <strong>{appt.patientName}</strong>
-                        <p className="muted">60 min session</p>
-                      </div>
-                      <span className={`badge badge-${appt.status.toLowerCase()}`}>{appt.status}</span>
-                    </div>
-                    {appt.status === 'SCHEDULED' ? (
-                      <div className="row timeline-actions">
-                        {isInStatusWindow(appt.startTime, appt.endTime) ? (
-                          <>
-                            <button type="button" className="btn btn-sm btn-primary" disabled={mark.isPending} onClick={() => mark.mutate({ id: appt.id, status: 'COMPLETED' })}>
-                              Completed
-                            </button>
-                            <button type="button" className="btn btn-sm btn-outlined" disabled={mark.isPending} onClick={() => mark.mutate({ id: appt.id, status: 'NO_SHOW' })}>
-                              No-show
-                            </button>
-                          </>
-                        ) : null}
-                        <button type="button" className="btn btn-sm btn-danger" disabled={cancel.isPending} onClick={() => cancel.mutate(appt.id)}>
-                          Cancel
-                        </button>
-                      </div>
-                    ) : null}
-                  </article>
-                </li>
-              ))}
-            </ol>
-          </>
+          <ol className="agenda-list">
+            {dayRows.map((appt) => (
+              <AgendaItem
+                key={appt.id}
+                appt={appt}
+                busy={mark.isPending || cancel.isPending}
+                onStatus={(status) => mark.mutate({ id: appt.id, status })}
+                onCancel={() => {
+                  void ask({
+                    title: 'Cancel this session?',
+                    body: `${appt.patientName} · ${formatTime(appt.startTime)} – ${formatTime(appt.endTime)}. The slot will open again.`,
+                    confirmLabel: 'Cancel session',
+                    danger: true,
+                  }).then((ok) => {
+                    if (ok) cancel.mutate(appt.id)
+                  })
+                }}
+              />
+            ))}
+          </ol>
         ) : null}
       </section>
+      {dialog}
     </div>
   )
 }
 
-function AgendaRow({
+function statusLabel(status: Appointment['status']): string {
+  if (status === 'NO_SHOW') return 'No-show'
+  return status.charAt(0) + status.slice(1).toLowerCase()
+}
+
+function AgendaItem({
   appt,
   busy,
   onStatus,
@@ -241,21 +210,21 @@ function AgendaRow({
   const canOutcome = appt.status === 'SCHEDULED' && inWindow
   const canCancel = appt.status === 'SCHEDULED'
   return (
-    <tr>
-      <td>
-        {formatTime(appt.startTime)} – {formatTime(appt.endTime)}
-      </td>
-      <td>
-        <div className="row">
-          <Avatar name={appt.patientName} size="sm" src={patientShowcase(appt.patientName).photoUrl} />
-          {appt.patientName}
+    <li className={appt.status === 'SCHEDULED' ? 'agenda-item is-scheduled' : 'agenda-item'}>
+      <div className="agenda-time">
+        <strong>{formatTime(appt.startTime)}</strong>
+        <span>{formatTime(appt.endTime)}</span>
+      </div>
+      <div className="agenda-patient">
+        <Avatar name={appt.patientName} size="sm" src={patientShowcase(appt.patientName).photoUrl} />
+        <div>
+          <strong>{appt.patientName}</strong>
+          <p className="muted">60 min session</p>
         </div>
-      </td>
-      <td>
-        <span className={`badge badge-${appt.status.toLowerCase()}`}>{appt.status}</span>
-      </td>
-      <td>
-        <div className="row">
+      </div>
+      <span className={`badge badge-${appt.status.toLowerCase()}`}>{statusLabel(appt.status)}</span>
+      {canOutcome || canCancel ? (
+        <div className="agenda-actions">
           {canOutcome ? (
             <>
               <button
@@ -282,7 +251,7 @@ function AgendaRow({
             </button>
           ) : null}
         </div>
-      </td>
-    </tr>
+      ) : null}
+    </li>
   )
 }

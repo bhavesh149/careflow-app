@@ -104,7 +104,7 @@ export function TherapistShell() {
       <aside className="sidenav">
         <div className="sidenav-brand">
           <Brand to="/dashboard" />
-          <p className="sidenav-kicker">Portal</p>
+          <p className="sidenav-kicker">Therapist portal</p>
         </div>
         <nav className="sidenav-links">
           {links.map((l) => (
@@ -121,7 +121,10 @@ export function TherapistShell() {
         <div className="sidenav-foot">
           <NavLink to="/profile" className="sidenav-profile">
             <Avatar name={user?.fullName ?? 'T'} size="sm" src={user ? profilePhoto(user) : undefined} />
-            <span>{user?.fullName}</span>
+            <span>
+              <strong>{user?.fullName}</strong>
+              <small>Therapist</small>
+            </span>
           </NavLink>
           <LogoutButton className="sidenav-logout" />
         </div>
