@@ -65,7 +65,7 @@ The browser will call the ALB from the S3 origin. `CORS_ORIGINS` on ECS must lis
 
 ## 4. Sessions
 
-S3 and the ALB are **different sites**. The httpOnly refresh cookie is `SameSite=Lax`, so it is not sent from the SPA to the ALB. Login still works (access token in memory). After 15 minutes the user signs in again. `SameSite=None; Secure` needs HTTPS on both sides.
+S3 and the ALB are **different sites**. A `SameSite=Lax` httpOnly cookie is not sent on that cross-origin fetch. The SPA therefore persists `refreshToken` from the login JSON in `localStorage` and sends it on `POST /v1/auth/refresh`. `SameSite=None; Secure` needs HTTPS on both sides.
 
 ## 5. Tear down the bucket later
 

@@ -12,6 +12,7 @@ export type SessionResponse = {
   accessToken: string
   expiresAt: string
   expiresInSeconds: number
+  refreshToken?: string
   user: User
 }
 

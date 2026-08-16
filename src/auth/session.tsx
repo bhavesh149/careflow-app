@@ -14,6 +14,15 @@ import { authApi } from '../api/endpoints'
 import { registerRefresh, setAccessToken } from '../api/client'
 import type { Role, SessionResponse, User } from '../api/types'
 import { homeFor } from './paths'
+import {
+  STORAGE_KEY,
+  accessTokenStillValid,
+  clearPersistedSession,
+  readPersistedSession,
+  toPersisted,
+  withRefreshLock,
+  writePersistedSession,
+} from './persist'
 
 type SessionValue = {
   user: User | null
@@ -33,30 +42,43 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setAccessToken(session.accessToken)
     setUser(session.user)
     setExpiresAt(session.expiresAt)
+    writePersistedSession(toPersisted(session, readPersistedSession()))
   }, [])
 
   const clear = useCallback(() => {
     setAccessToken(null)
     setUser(null)
     setExpiresAt(null)
+    clearPersistedSession()
+  }, [])
+
+  const restoreFromStorage = useCallback(() => {
+    const stored = readPersistedSession()
+    if (!stored || !accessTokenStillValid(stored.expiresAt)) return stored
+    setAccessToken(stored.accessToken)
+    setUser(stored.user)
+    setExpiresAt(stored.expiresAt)
+    return stored
   }, [])
 
   const refresh = useCallback(async () => {
-    try {
-      const session = await authApi.refresh()
-      apply(session)
+    return withRefreshLock(async () => {
       try {
-        const me = await authApi.me()
-        setUser(me)
+        const stored = readPersistedSession()
+        const session = await authApi.refresh(stored?.refreshToken)
+        apply(session)
+        try {
+          const me = await authApi.me()
+          setUser(me)
+        } catch {
+          // Token is valid; profile re-read is best-effort.
+        }
+        return true
       } catch {
-        // Token is valid; profile re-read is best-effort.
+        return false
       }
-      return true
-    } catch {
-      clear()
-      return false
-    }
-  }, [apply, clear])
+    })
+  }, [apply])
 
   useEffect(() => {
     registerRefresh(refresh)
@@ -65,24 +87,43 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false
     const id = window.setTimeout(() => {
-      void refresh().finally(() => {
-        if (!cancelled) setReady(true)
-      })
+      restoreFromStorage()
+      void refresh()
+        .then(async (ok) => {
+          if (cancelled) return
+          if (ok) return
+          const stored = readPersistedSession()
+          if (stored && accessTokenStillValid(stored.expiresAt)) {
+            try {
+              const me = await authApi.me()
+              if (!cancelled) setUser(me)
+              return
+            } catch {
+              // Stored access token is stale.
+            }
+          }
+          if (!cancelled) clear()
+        })
+        .finally(() => {
+          if (!cancelled) setReady(true)
+        })
     }, 0)
     return () => {
       cancelled = true
       window.clearTimeout(id)
     }
-  }, [refresh])
+  }, [refresh, restoreFromStorage, clear])
 
   useEffect(() => {
     if (!expiresAt) return
     const delay = Math.max(0, Date.parse(expiresAt) - 60_000 - Date.now())
     const id = window.setTimeout(() => {
-      void refresh()
+      void refresh().then((ok) => {
+        if (!ok && !accessTokenStillValid(expiresAt)) clear()
+      })
     }, delay)
     return () => window.clearTimeout(id)
-  }, [expiresAt, refresh])
+  }, [expiresAt, refresh, clear])
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -94,13 +135,34 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(async () => {
+    const stored = readPersistedSession()
     try {
-      await authApi.logout()
+      await authApi.logout(stored?.refreshToken)
     } finally {
       clear()
       queryClient.clear()
     }
   }, [clear, queryClient])
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY) return
+      if (!event.newValue) {
+        setAccessToken(null)
+        setUser(null)
+        setExpiresAt(null)
+        queryClient.clear()
+        return
+      }
+      const stored = readPersistedSession()
+      if (!stored) return
+      setAccessToken(stored.accessToken)
+      setUser(stored.user)
+      setExpiresAt(stored.expiresAt)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [queryClient])
 
   const value = useMemo(() => ({ user, login, logout }), [user, login, logout])
 

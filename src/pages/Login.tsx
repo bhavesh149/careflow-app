@@ -7,6 +7,7 @@ import { useSession } from '../auth/session'
 import { Icon } from '../components/Icon'
 import { useToast } from '../components/Toast'
 import { DEMO_LOGINS } from '../data/demo'
+import { errorMessage } from '../lib/errors'
 
 const DEMO_PASSWORD = 'Careflow!2026'
 const REMEMBER_KEY = 'careflow_remember_email'
@@ -26,6 +27,20 @@ export function LoginPage() {
   const [pending, setPending] = useState(false)
   const [retryAfter, setRetryAfter] = useState<number | null>(null)
 
+  useEffect(() => {
+    if (!showDemo) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowDemo(false)
+    }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [showDemo])
+
   if (user) return <Navigate to={homeFor(user)} replace />
 
   async function onSubmit(event: FormEvent) {
@@ -38,6 +53,7 @@ export function LoginPage() {
       else localStorage.removeItem(REMEMBER_KEY)
       navigate(homeFor(next), { replace: true })
     } catch (err) {
+      toast.fromError(err)
       if (err instanceof ApiError && err.code === 'RATE_LIMITED') {
         const wait = err.retryAfterSeconds ?? 15
         setRetryAfter(wait)
@@ -46,7 +62,7 @@ export function LoginPage() {
       } else if (err instanceof ApiError && err.code === 'INVALID_CREDENTIALS') {
         setError('Email or password is incorrect.')
       } else {
-        setError(err instanceof Error ? err.message : 'Unable to sign in.')
+        setError(errorMessage(err))
       }
     } finally {
       setPending(false)
@@ -63,20 +79,6 @@ export function LoginPage() {
   function unavailable(label: string) {
     toast.push(`${label} isn’t in this demo. Use a seeded account to sign in.`, 'warn')
   }
-
-  useEffect(() => {
-    if (!showDemo) return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowDemo(false)
-    }
-    window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
-    }
-  }, [showDemo])
 
   return (
     <div className="login-page">

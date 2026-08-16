@@ -7,7 +7,7 @@ import type { Appointment } from '../../api/types'
 import { Avatar } from '../../components/Avatar'
 import { Icon } from '../../components/Icon'
 import { useConfirmDialog } from '../../components/ConfirmDialog'
-import { useToast } from '../../components/Toast'
+import { useQueryErrorToast, useToast } from '../../components/Toast'
 import { errorMessage } from '../../lib/errors'
 import { clearIntent, intentKey } from '../../lib/idempotency'
 import { formatLongDate, formatTime } from '../../lib/tz'
@@ -25,6 +25,7 @@ export function AppointmentsPage() {
     queryKey: ['appointments', 'PATIENT', tab],
     queryFn: () => appointmentsApi.mine('PATIENT', tab),
   })
+  useQueryErrorToast(list.error)
 
   const cancelOne = useMutation({
     mutationFn: (appt: Appointment) => {

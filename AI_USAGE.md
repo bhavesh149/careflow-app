@@ -73,9 +73,9 @@ Typos left as-is.
 
 ### Cross-origin refresh cookie (S3 → ALB)
 
-- **Recommended:** `SameSite=None; Secure` so refresh works on the live site.
-- **Implemented:** left `SameSite=Lax`. Both sides are HTTP, so `Secure` cookies would not stick. Live demo uses the 15-minute access token; local Vite proxy keeps refresh.
-- **Trade-off:** reviewers on the S3 URL sign in again after 15 minutes. HTTPS on both sides is the real fix.
+- **Recommended:** `SameSite=None; Secure` so the httpOnly cookie is sent cross-site. That needs HTTPS on both S3 and the ALB.
+- **Implemented:** login/refresh JSON includes `refreshToken`. The SPA keeps it in `localStorage` and sends it on `/v1/auth/refresh` / `/v1/auth/logout`. Cookie still used same-origin (Vite proxy). `SameSite=Lax` is unchanged because `Secure` cookies would not stick on HTTP.
+- **Trade-off:** a stored refresh token is readable by XSS, unlike an httpOnly cookie. Acceptable for this HTTP demo; HTTPS + `SameSite=None` is the production shape.
 
 ---
 

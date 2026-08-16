@@ -979,27 +979,95 @@ textarea {
   bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  z-index: 30;
-  width: min(360px, calc(100% - 2rem));
+  gap: 0.55rem;
+  z-index: 90;
+  width: min(380px, calc(100% - 2rem));
+  pointer-events: none;
 }
 
 .toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 0.85rem 0.9rem 1rem;
   box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: toastIn 0.22s ease-out;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+  font-size: 1.35rem;
+}
+
+.toast-message {
+  margin: 0;
+  flex: 1;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.toast-dismiss {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.1rem;
+  border-radius: 6px;
+  opacity: 0.7;
+}
+
+.toast-dismiss:hover {
+  opacity: 1;
+  background: rgb(0 0 0 / 0.06);
 }
 
 .toast-error {
+  background: var(--danger-50);
   border-color: var(--danger-500);
+  color: var(--danger-700);
 }
+
+.toast-error .toast-icon {
+  color: var(--danger-500);
+}
+
 .toast-warn {
+  background: var(--warning-50);
   border-color: var(--warning-500);
+  color: #8a5a00;
 }
+
+.toast-warn .toast-icon {
+  color: var(--warning-500);
+}
+
 .toast-ok {
-  border-color: var(--primary-300);
+  background: var(--tertiary-50);
+  border-color: var(--tertiary-500);
+  color: var(--tertiary-800);
+}
+
+.toast-ok .toast-icon {
+  color: var(--tertiary-600);
 }
 
 .boot {
@@ -1813,8 +1881,11 @@ textarea {
     padding-bottom: 2rem;
   }
 
-  .shell:not(.shell-therapist) .hold-box,
-  .shell:not(.shell-therapist) .toast-stack {
+  .shell:not(.shell-therapist) .hold-box {
+    bottom: 1rem;
+  }
+
+  .toast-stack {
     bottom: 1rem;
   }
 

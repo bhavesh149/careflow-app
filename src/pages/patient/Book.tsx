@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, retryIdempotent } from '../../api/client'
@@ -8,7 +8,7 @@ import type { Frequency, Hold } from '../../api/types'
 import { Avatar } from '../../components/Avatar'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { Icon } from '../../components/Icon'
-import { useToast } from '../../components/Toast'
+import { useQueryErrorToast, useToast } from '../../components/Toast'
 import { useCountdown } from '../../hooks/useCountdown'
 import { formatCountdown, remainingMsFactory } from '../../lib/clock'
 import { errorMessage, recurringConflicts } from '../../lib/errors'
@@ -55,6 +55,7 @@ export function BookPage() {
   const remaining = useCountdown(hold)
   const activeHold = hold && remaining > 0 ? hold : null
   const expired = Boolean(hold) && remaining <= 0
+  const expiryToast = useRef(false)
 
   const directory = useQuery({
     queryKey: ['therapists'],
@@ -84,6 +85,23 @@ export function BookPage() {
     enabled: therapistId.length > 0,
   })
 
+  useQueryErrorToast(directory.error)
+  useQueryErrorToast(availability.error)
+
+  useEffect(() => {
+    if (!hold) {
+      expiryToast.current = false
+      return
+    }
+    if (remaining > 0) return
+    if (expiryToast.current) return
+    expiryToast.current = true
+    toast.push('Your hold expired. The slot was released — pick it again to book.', 'warn')
+    setHold(null)
+    setAskConfirm(false)
+    void availability.refetch()
+  }, [hold, remaining, toast, availability.refetch])
+
   const slotsForDay = useMemo(
     () => (availability.data?.slots ?? []).filter((s) => groupKey(s.startTime) === selectedDate),
     [availability.data, selectedDate],
@@ -105,19 +123,37 @@ export function BookPage() {
       const next = await holdsApi.create(therapistId, startTime)
       setHold(next)
       void queryClient.invalidateQueries({ queryKey: ['holds'] })
+      toast.push(`Slot held for ${formatTime(next.startTime)}. Confirm within 60 seconds.`, 'ok')
     } catch (err) {
+      toast.fromError(err)
       if (err instanceof ApiError && (err.code === 'SLOT_ALREADY_HELD' || err.code === 'SLOT_NOT_AVAILABLE')) {
         setBusy((prev) => new Set(prev).add(startTime))
         void availability.refetch()
       }
-      toast.fromError(err)
     } finally {
       setHolding(false)
     }
   }
 
-  async function confirm() {
+  async function releaseHold() {
     if (!activeHold) return
+    try {
+      await holdsApi.release(activeHold.id)
+      setHold(null)
+      toast.push('Slot released. You can pick another time.', 'ok')
+      void queryClient.invalidateQueries({ queryKey: ['holds'] })
+      void availability.refetch()
+    } catch (err) {
+      toast.fromError(err)
+    }
+  }
+
+  async function confirm() {
+    if (!activeHold) {
+      toast.push('Your hold expired. Select the slot again to book.', 'warn')
+      setAskConfirm(false)
+      return
+    }
     setConfirming(true)
     try {
       if (bookingType === 'ONCE') {
@@ -376,15 +412,7 @@ export function BookPage() {
                   <Icon name="check_circle" filled />
                   {confirming ? 'Confirming…' : 'Confirm appointment'}
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-outlined"
-                  onClick={() => {
-                    void holdsApi.release(activeHold.id).catch(() => undefined)
-                    setHold(null)
-                    void queryClient.invalidateQueries({ queryKey: ['holds'] })
-                  }}
-                >
+                <button type="button" className="btn btn-outlined" onClick={() => void releaseHold()}>
                   Release slot
                 </button>
               </div>

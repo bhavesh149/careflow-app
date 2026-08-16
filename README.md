@@ -20,7 +20,7 @@ Password for every seeded account: `Careflow!2026`
 | `dr.mehta@careflow.test` | Therapist |
 | `dr.rao@careflow.test` | Therapist |
 
-The live site talks to the API over HTTP (S3 website + ALB). After about 15 minutes you sign in again: the refresh cookie is `SameSite=Lax` and is not sent cross-site. Local `npm run dev` keeps the full cookie refresh flow.
+The live site talks to the API over HTTP (S3 website + ALB). The SPA stores the session in `localStorage` and sends the refresh token in the JSON body, because a `SameSite=Lax` cookie is not attached to that cross-origin fetch. Local `npm run dev` still uses the cookie via the Vite proxy.
 
 ---
 

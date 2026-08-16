@@ -7,7 +7,7 @@ import type { Appointment } from '../../api/types'
 import { useSession } from '../../auth/session'
 import { Avatar } from '../../components/Avatar'
 import { Icon } from '../../components/Icon'
-import { useToast } from '../../components/Toast'
+import { useQueryErrorToast, useToast } from '../../components/Toast'
 import { errorMessage } from '../../lib/errors'
 import { clearIntent, intentKey } from '../../lib/idempotency'
 import { patientShowcase, profilePhoto } from '../../data/demo'
@@ -34,6 +34,8 @@ export function DashboardPage() {
     queryKey: ['appointments', 'THERAPIST', 'PAST'],
     queryFn: () => appointmentsApi.mine('THERAPIST', 'PAST'),
   })
+  useQueryErrorToast(upcoming.error)
+  useQueryErrorToast(past.error)
 
   const all = useMemo(
     () => [...(upcoming.data?.appointments ?? []), ...(past.data?.appointments ?? [])],

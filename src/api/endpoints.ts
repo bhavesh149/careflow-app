@@ -22,14 +22,19 @@ export const authApi = {
       auth: false,
       skipRefresh: true,
     }),
-  refresh: () =>
+  refresh: (refreshToken?: string) =>
     api<SessionResponse>('/v1/auth/refresh', {
       method: 'POST',
+      body: refreshToken ? { refreshToken } : {},
       auth: false,
       skipRefresh: true,
     }),
-  logout: () =>
-    api<void>('/v1/auth/logout', { method: 'POST', skipRefresh: true }),
+  logout: (refreshToken?: string) =>
+    api<void>('/v1/auth/logout', {
+      method: 'POST',
+      body: refreshToken ? { refreshToken } : {},
+      skipRefresh: true,
+    }),
   me: () => api<User>('/v1/me', { skipRefresh: true }),
 }
 

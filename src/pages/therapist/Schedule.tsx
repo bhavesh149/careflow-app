@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { therapistsApi } from '../../api/endpoints'
 import type { ScheduleRule } from '../../api/types'
 import { Icon } from '../../components/Icon'
-import { useToast } from '../../components/Toast'
+import { useQueryErrorToast, useToast } from '../../components/Toast'
 import { errorMessage } from '../../lib/errors'
 import { WEEKDAYS, kolkataDate } from '../../lib/tz'
 
@@ -32,6 +32,7 @@ export function SchedulePage() {
     queryKey: ['schedule'],
     queryFn: () => therapistsApi.getSchedule(),
   })
+  useQueryErrorToast(schedule.error)
   const [draft, setDraft] = useState<DraftRule[] | null>(null)
   const [effectiveFrom, setEffectiveFrom] = useState(kolkataDate())
   const rules = draft ?? (schedule.data ? toDraft(schedule.data.rules) : [])

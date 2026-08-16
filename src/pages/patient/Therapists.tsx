@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { therapistsApi } from '../../api/endpoints'
 import { Avatar } from '../../components/Avatar'
 import { Icon } from '../../components/Icon'
+import { useQueryErrorToast } from '../../components/Toast'
 import { sessionsLabel, showcaseFor } from '../../data/therapistShowcase'
 import { errorMessage } from '../../lib/errors'
 
@@ -16,6 +17,7 @@ export function TherapistsPage() {
     queryKey: ['therapists'],
     queryFn: () => therapistsApi.list(0),
   })
+  useQueryErrorToast(list.error)
 
   const enriched = useMemo(() => {
     return (list.data?.therapists ?? []).map((t) => ({ therapist: t, showcase: showcaseFor(t) }))
