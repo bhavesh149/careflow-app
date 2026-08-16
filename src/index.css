@@ -966,6 +966,95 @@ textarea {
   flex-shrink: 0;
 }
 
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--neutral-100);
+  color: var(--text-h);
+  padding: 0.85rem 1.1rem;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.select-trigger:hover:not(:disabled) {
+  background: var(--neutral-200);
+}
+
+.select-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.select-trigger .material-symbols-outlined {
+  color: var(--neutral-600);
+  font-size: 1.25rem;
+}
+
+.picker-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.25rem 1.25rem 1.1rem;
+  width: min(400px, calc(100vw - 2rem));
+}
+
+.picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.picker-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  border: 1px solid transparent;
+  background: var(--neutral-50);
+  color: var(--text-h);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-option:hover {
+  background: var(--primary-50);
+  border-color: var(--primary-100);
+}
+
+.picker-option.selected {
+  background: var(--primary-50);
+  border-color: var(--primary-200);
+  color: var(--primary-700);
+}
+
+.picker-option .material-symbols-outlined {
+  color: var(--primary-500);
+}
+
 .countdown {
   font-family: var(--heading);
   font-size: 2.4rem;
@@ -1489,6 +1578,11 @@ textarea {
   margin: 0;
 }
 
+.slot-pane {
+  position: relative;
+  min-width: 0;
+}
+
 .slot-pane > .muted,
 .slot-pane > .field-error {
   margin-bottom: 0.9rem;
@@ -1582,26 +1676,92 @@ textarea {
 }
 
 .hold-box {
-  margin-top: 1.25rem;
+  position: relative;
+  z-index: 1;
+  margin: 1.15rem 0 0;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1rem;
+  border: 1px solid var(--primary-100);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.95rem 0.95rem;
   display: flex;
   flex-direction: column;
+  gap: 0.7rem;
+  box-shadow: 0 10px 28px rgba(26, 115, 232, 0.1);
+}
+
+.hold-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
-  position: sticky;
-  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
-  z-index: 16;
-  box-shadow: var(--shadow-lg);
+}
+
+.hold-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.hold-kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--neutral-600);
+}
+
+.hold-copy strong {
+  font-family: var(--heading);
+  font-size: 1.05rem;
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+.hold-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  font-family: var(--heading);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--primary-600);
+  background: var(--primary-50);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.7rem 0.35rem 0.55rem;
+}
+
+.hold-timer .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.hold-box .field {
+  margin: 0;
+}
+
+.hold-box .field-label {
+  font-size: 0.75rem;
+}
+
+.hold-box .field-input,
+.hold-box .select-trigger {
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius-sm);
+}
+
+.hold-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 0.5rem;
 }
 
 .hold-box .btn {
   width: 100%;
-}
-
-.hold-row .countdown {
-  font-size: 1.6rem;
+  margin: 0;
+  padding: 0.65rem 0.85rem;
 }
 
 .tabs {
@@ -1881,17 +2041,18 @@ textarea {
     padding-bottom: 2rem;
   }
 
-  .shell:not(.shell-therapist) .hold-box {
-    bottom: 1rem;
+  .book-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: stretch;
+  }
+
+  .slot-pane {
+    min-height: 100%;
   }
 
   .toast-stack {
     bottom: 1rem;
-  }
-
-  .book-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 2rem;
   }
 
   .book-panel {
@@ -2256,10 +2417,6 @@ textarea {
   }
 
   .toast-stack {
-    bottom: 1rem;
-  }
-
-  .hold-box {
     bottom: 1rem;
   }
 

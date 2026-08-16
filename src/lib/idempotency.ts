@@ -1,3 +1,5 @@
+import { randomId } from './id'
+
 const prefix = 'careflow.idem.'
 
 /**
@@ -10,7 +12,7 @@ export function intentKey(intent: string, fingerprint = ''): string {
   const stored = sessionStorage.getItem(keySlot)
   const storedFp = sessionStorage.getItem(fpSlot)
   if (stored && storedFp === fingerprint) return stored
-  const next = crypto.randomUUID()
+  const next = randomId()
   sessionStorage.setItem(keySlot, next)
   sessionStorage.setItem(fpSlot, fingerprint)
   return next

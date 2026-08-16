@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { randomId } from '../lib/id'
 import { errorMessage, isApiError, isWarnCode } from '../lib/errors'
 import { Icon } from './Icon'
 
@@ -57,7 +58,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (message: string, kind: Kind = 'ok') => {
       const text = message.trim()
       if (!text) return
-      const id = crypto.randomUUID()
+      const id = randomId()
       setItems((prev) => [...prev.slice(-2), { id, kind, message: text }])
       const timer = window.setTimeout(() => dismiss(id), durationFor(kind))
       timers.current.set(id, timer)

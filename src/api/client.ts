@@ -1,4 +1,5 @@
 import type { ApiErrorBody } from './types'
+import { randomId } from '../lib/id'
 
 export class ApiError extends Error {
   readonly code: string
@@ -133,7 +134,7 @@ export async function refreshOnce(): Promise<boolean> {
 }
 
 export function newIdempotencyKey(): string {
-  return crypto.randomUUID()
+  return randomId()
 }
 
 /** Retry a mutation that returned 409 IDEMPOTENCY_IN_PROGRESS, keeping the same key. */

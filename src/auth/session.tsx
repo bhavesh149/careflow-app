@@ -1,6 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -14,6 +13,7 @@ import { authApi } from '../api/endpoints'
 import { registerRefresh, setAccessToken } from '../api/client'
 import type { Role, SessionResponse, User } from '../api/types'
 import { homeFor } from './paths'
+import { SessionContext, type SessionValue } from './session-context'
 import {
   STORAGE_KEY,
   accessTokenStillValid,
@@ -23,14 +23,6 @@ import {
   withRefreshLock,
   writePersistedSession,
 } from './persist'
-
-type SessionValue = {
-  user: User | null
-  login: (email: string, password: string) => Promise<User>
-  logout: () => Promise<void>
-}
-
-const SessionContext = createContext<SessionValue | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()

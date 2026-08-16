@@ -79,3 +79,10 @@ export function recurringConflicts(err: unknown): RecurringConflict[] {
   const list = (details as { conflicts: unknown }).conflicts
   return Array.isArray(list) ? (list as RecurringConflict[]) : []
 }
+
+export function conflictLabel(reason: string): string {
+  if (reason === 'OUTSIDE_SCHEDULE') return 'outside weekly hours'
+  if (reason === 'ALREADY_BOOKED' || reason === 'APPOINTMENT_CONFLICT') return 'already booked'
+  if (reason === 'HELD_BY_OTHER' || reason === 'SLOT_ALREADY_HELD') return 'held by another patient'
+  return reason.replaceAll('_', ' ').toLowerCase()
+}

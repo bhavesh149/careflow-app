@@ -8,13 +8,15 @@ import type { Frequency, Hold } from '../../api/types'
 import { Avatar } from '../../components/Avatar'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { Icon } from '../../components/Icon'
+import { SelectModal } from '../../components/SelectModal'
 import { useQueryErrorToast, useToast } from '../../components/Toast'
 import { useCountdown } from '../../hooks/useCountdown'
 import { formatCountdown, remainingMsFactory } from '../../lib/clock'
-import { errorMessage, recurringConflicts } from '../../lib/errors'
+import { conflictLabel, errorMessage, recurringConflicts } from '../../lib/errors'
 import { clearIntent, intentKey } from '../../lib/idempotency'
 import {
   addDays,
+  formatDateTime,
   formatLongDate,
   formatMonthYear,
   formatTime,
@@ -187,8 +189,8 @@ export function BookPage() {
       if (conflicts.length > 0) {
         toast.push(
           `Nothing was booked. Conflicts: ${conflicts
-            .map((c) => `${formatTime(c.startTime)} (${c.reason})`)
-            .join(', ')}`,
+            .map((c) => `${formatDateTime(c.startTime)} (${conflictLabel(c.reason)})`)
+            .join('; ')}`,
           'warn',
         )
       } else {
@@ -368,28 +370,23 @@ export function BookPage() {
             ) : null}
             {activeHold ? (
               <div className="hold-box">
-                <div className="hold-row">
-                  <span className="muted">
-                    <Icon name="schedule" /> Slot held
-                  </span>
-                  <span className="countdown" aria-live="polite">
+                <div className="hold-head">
+                  <div className="hold-copy">
+                    <p className="hold-kicker">Slot held</p>
+                    <strong>{formatTime(activeHold.startTime)}</strong>
+                  </div>
+                  <span className="hold-timer" aria-live="polite">
+                    <Icon name="schedule" />
                     {formatCountdown(remaining)}
                   </span>
                 </div>
-                <label className="field">
-                  <span className="field-label">Booking type</span>
-                  <select
-                    className="field-select"
-                    value={bookingType}
-                    onChange={(e) => setBookingType(e.target.value as 'ONCE' | Frequency)}
-                  >
-                    {FREQ_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SelectModal
+                  label="Booking type"
+                  title="Booking type"
+                  value={bookingType}
+                  options={FREQ_OPTIONS}
+                  onChange={setBookingType}
+                />
                 {bookingType !== 'ONCE' ? (
                   <label className="field">
                     <span className="field-label">Occurrences (max 26)</span>
@@ -403,18 +400,20 @@ export function BookPage() {
                     />
                   </label>
                 ) : null}
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={confirming || remaining <= 0}
-                  onClick={() => setAskConfirm(true)}
-                >
-                  <Icon name="check_circle" filled />
-                  {confirming ? 'Confirming…' : 'Confirm appointment'}
-                </button>
-                <button type="button" className="btn btn-outlined" onClick={() => void releaseHold()}>
-                  Release slot
-                </button>
+                <div className="hold-actions">
+                  <button type="button" className="btn btn-outlined" onClick={() => void releaseHold()}>
+                    Release
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={confirming || remaining <= 0}
+                    onClick={() => setAskConfirm(true)}
+                  >
+                    <Icon name="check_circle" filled />
+                    {confirming ? 'Confirming…' : 'Confirm'}
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>
